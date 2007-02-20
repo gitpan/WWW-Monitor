@@ -12,6 +12,8 @@ inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/WWW/Monitor.pm
 lib/WWW/Monitor/Task.pm
+lib/WWW/Monitor/examples/webmon-0.11.pl
+lib/WWW/Monitor/examples/webmon.conf.example
 Makefile.PL
 MANIFEST
 META.yml			# Will be created by "make dist"

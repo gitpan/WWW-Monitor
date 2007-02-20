@@ -6,4 +6,5 @@ Revision history for Perl module WWW::Monitor:
 
 0.12  Sun Feb 20 09:15:11 GMT 2007
         - Documentation changes
-        
+        - Examples added
+      
