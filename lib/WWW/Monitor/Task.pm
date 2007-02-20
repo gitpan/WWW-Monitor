@@ -35,7 +35,7 @@ our $HASH_KEY_PREFIX = "__HASH_KEY__";
 =head1 NAME
 
 WWW::Monitor::Task - A Task class for monitoring single web page
-against cached version.
+against a cached version.
 
 =head1 VERSION
 
@@ -45,8 +45,8 @@ Version 0.1
 
 =head1 Description
 
-This class responsible for tracking a single web page and report
-changes.  This class should be considered as private asset of
+This class is responsible for tracking a single web page and reporting
+changes.  This class should be considered as a private asset of
 L<WWW::Monitor>.  For details please refer to <WWW::Monitor>
 
 =head1 EXPORT
@@ -77,7 +77,7 @@ sub new {
 
 =head2 run ( mechanize, carrier, <cache>)
 
-Executes Task.  Parameters: 
+Executes Task.  Parameters:
 
 mechanize - Web mechanize object.
 
@@ -85,9 +85,9 @@ L<WWW::Monitor::Task> assumes that the given object implements or
 inherits WWW::mechnize abstraction. See
 L<http://search.cpan.org/~petdance/WWW-Mechanize-1.20/lib/WWW/Mechanize.pm>.
 
-carrier- Object that that will conduct the notification See L<WWW::Monitor> for details
+carrier- Object which will conduct the notification; see L<WWW::Monitor> for details
 
-cache - optional - A cache class. 
+cache - optional - A cache class.
 
 =cut
 
@@ -107,7 +107,7 @@ sub run {
   #Compares Pages list eith cache.
   my ($url_keys_for_comapre,$old_pages_to_compare,$new_pagets_to_compare,$missing_pages,$added_pages,$existsInCache) = $self->sync_cache($url_i,$responses);
 
-  #If a page does not exists in cache we don't want to notify on this.
+  # if a page does not exist in cache we don't want to notify this
   return 1 unless ($existsInCache);
 
   #Activate Notification.
@@ -118,7 +118,7 @@ sub run {
 =head2 be_notified
 
 (Private method)
-Tests if a page is tested. If yes notification call back is being called.
+Tests if a page has changed. If yes, notification call back is being called.
 
 =cut
 
@@ -136,7 +136,7 @@ sub be_notified {
   my $notify_ind2 = $self->extract_text($added_pages,"Found new parts in url:",\@messages);
   my $index = 0;
 
-  #Go over on all pages that exists in cache and perform textual comparation
+  #Go over on all pages that exists in cache and perform textual comparison
   if (@$old_pages_to_compare) {
     push @messages,"The following parts has been changed since last visited:";
     while ($index < scalar(@$old_pages_to_compare)) {
@@ -151,8 +151,8 @@ sub be_notified {
     }
   }
 
-  
-  #If notification is requried, perform it.
+
+  #If notification is required, perform it.
   if ($notify_ind or $notify_ind1 or $notify_ind2) {
     $self->store_validity($url,time());
     return $carrier->notify($url,join("\n",@messages),$self);
@@ -162,7 +162,7 @@ sub be_notified {
 =head2 format_html
 
 (Private method)
-Return a textual version of an html.
+Return a textual version of HTML
 
 =cut
 
@@ -178,7 +178,7 @@ sub format_html {
 =head2 extract_text 
 
 (Private Method).
-Extract text from given set of pages. 
+Extract text from a given set of pages.
 
 =cut
 
@@ -205,7 +205,7 @@ sub extract_text {
 =head2 get_hash_cache_key
 
 (Private method)
-Return a hash key that stores information about the whole visibe part URL.
+Return a hash key that stores information about the entire visible part or the URL.
 
 =cut
 
@@ -218,8 +218,8 @@ sub get_hash_cache_key {
 =head2 get_cache_hash
 
 (Private Method)
-Returns all urls that was last cached.
-return true if the url was previously hased.
+Returns all urls which were last cached.
+return true if the url was previously hashed.
 
 =cut
 
@@ -255,7 +255,7 @@ sub store_validity {
 
 =head2 store_cache_hash
 
-Store General information of a web adderess. This includes all frames and dates.
+Store General information of a web address, including all frames and dates.
 
 =cut
 
@@ -282,14 +282,15 @@ sub store_cache_hash {
 =cut
 
 
-#sync_cache (Privatre method) takes newly retreived data and store and compares it with the cache data.
-#That is, It returns as follows:
-# might_be_changed - Urls that are includes in the retreived pages and in in the cache. Those pages are potentialy changed,
-#therefore should be examinated by HTML comperator.
-#deleted_data - Pages that exists in cache and not in the new set.
-#added_data - Pages that exists only in the new version.
-#In addition the sub purge all deletd pages from cache and store the added pages.
-#From performance reasons all the "might_be_changed" pages are not cached. This is left for the caller to do.
+#sync_cache (Privatre method) takes newly retrieved data, and stores and compresses it with
+# the cache data. That is, It returns as follows:
+# might_be_changed - Urls that are included in the retrieved pages and are in the cache.
+# Those pages are potentialy changed, and therefore should be examinated by HTML comparison.
+# deleted_data - Pages which exist in the cache and not in the new set.
+# added_data - Pages which exist only in the new version.
+# In addition, the sub purges all deleted pages from cache and stores the added pages.
+# Due to performance reasons, all the "might_be_changed" pages are not cached.
+# This is left for the caller to do.
 sub sync_cache {
   my ($self,$url,$new_data_http) = @_;
   my $cache = $self->{cache};
@@ -342,8 +343,9 @@ sub sync_cache {
 
 =cut
 
-#get_url_data go recursively on all the pages that construct a given web page (That includes all type of included 
-#frames and dynamic pages) and retreive them into a given hash reference ($response.
+# get_url_data recurses over all pages which construct a given web page--including all type
+# of included frames and dynamic pages--and retrieves them into a given hash reference
+# $response.
 sub get_url_data {
   my $self = shift;
   my $mechanize = shift;
@@ -382,7 +384,7 @@ sub get_url_data {
 
 =head2 success 
 
-return true upon success on the last run execution.
+return true upon success of the last run execution.
 
 =cut
 
@@ -429,7 +431,7 @@ L<http://search.cpan.org/dist/WWW-Monitor>
 
 =back
 
-=head1 ACKNOWLEDGEMENTS
+=head1 ACKNOWLEDGMENTS
 
 =head1 COPYRIGHT & LICENSE
 

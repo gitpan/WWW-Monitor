@@ -4,7 +4,7 @@
 
 package WWW::Monitor;
 
-#use 5.008;
+use 5.005;
 use warnings;
 use strict;
 use Carp;
@@ -15,7 +15,7 @@ use File::HomeDir;
 
 our(@ISA, @EXPORT, @EXPORT_OK, $VERSION);
 
-$VERSION = 0.11;
+$VERSION = 0.12;
 
 use base qw(Exporter WWW::Mechanize);
 
@@ -37,45 +37,42 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-use MIME::Lite;
-use WWW::Monitor;
-
-
-sub notify {
-  my ($url,$text) =@_;
-  foreach my $recipient ('user1@host','user2@host2') {
-    my $mail_obj =
-      MIME::Lite->new(To=>$recipient,
-                      From=>'from@myHost',
-                      Subject=>"Web alert web page changed",
-                      Type=>'Text',
-                      Data=>'For details visit '.$url."\n".$text
-                      );
-    $mail_obj->send;
-  }
-  return 1;
-}
-
-my $mon = WWW::Monitor->new('MAIL_CALLBACK'=>\&notify);
-$mon->watch('http:://www.kahanovitch.com/');
-$mon->run;
+     use MIME::Lite;
+     use WWW::Monitor;
+     sub notify {
+       my ($url,$text) =@_;
+       foreach my $recipient ('user1@host','user2@host2') {
+         my $mail_obj =
+           MIME::Lite->new(To=>$recipient,
+                           From=>'from@myHost',
+                           Subject=>"Web alert web page changed",
+                           Type=>'Text',
+                           Data=>'For details visit '.$url."\n".$text
+                           );
+         $mail_obj->send;
+       }
+       return 1;
+     }
+     my $mon = WWW::Monitor->new('MAIL_CALLBACK'=>\&notify);
+     $mon->watch('http:://www.kahanovitch.com/');
+     $mon->run;
 
 =head1 Description
 
 L<WWW::Monitor> ia a Web monitoring mechanism built to detect and
 notify changes in web pages.  The module is designed to compare
-existing, online versions of web page and compare it with pre-cached
-mached version.  A web page may uinclude more than one file. A page
-may include sume frames and visible referenced data, which all
-together forms a sigle visible page.  For now, WWW::Monitor compares
-only textual information. Images, and non html data are not being
-compared. Textual informatin is eaxtracled by HTML::FormatText and
-HTML::TreeBuilder. Text comparation is being done by using Text::Diff
-module. To store information, WWW::Monitor cache data with "Cache"
-mechanism. By default, Cache::File is being used but the user may
-choose to use any Cache object that implements Cache module interface.
+existing, online versions of web page and compare it with a pre-cached
+matched version.  A web page may include more than one file. A page
+may include some frames and visible referenced data, which all
+together form a sigle visible page.  For now, WWW::Monitor compares
+only textual information. Images, and non-HTML data are not being
+compared. Textual information is extracled by HTML::FormatText and
+HTML::TreeBuilder. Text comparison is being done by using the Text::Diff
+module. To store information, WWW::Monitor caches data with the "Cache"
+mechanism. By default, Cache::File is being used, but the user may
+choose to use any Cache object that implements the Cache module interface.
 L<WWW::Monitor> is a subclass of L<WWW::Mechanize>, so any of
-L<WWW::Mechanize> or its super class can be used.
+L<WWW::Mechanize> or its super classes can be used.
 
 =head1 EXPORT
 
@@ -85,9 +82,9 @@ L<WWW::Mechanize> or its super class can be used.
 
 A constructor.  OPTIONS are passed in a hash like fashion, using key
 and value pairs. Possible options are: URL - A target URL to monitor.
-CACHE_ROOT - A root directory under which all caching are being
+CACHE_ROOT - A root directory under which all caching is being
 managed. Default = <home directory>/.www-monitor CACHE - cache
-object.The object must have get() and set() methods like Cache
+object. The object must have get() and set() methods like the Cache
 interface, as well as set_validity and validity.
 
 =cut
@@ -138,7 +135,7 @@ sub new {
 
 =head2 watch  ( URL(S) )
 
-Add URL to be watched. 
+Add URL to be watched.
 watch returns a reference to a L<WWW::Monitor::Task> object.
 for example $obj->watch('http://www.cnn.com' )
 
@@ -160,7 +157,7 @@ A code reference to be executed whenever a change is detected
 passed to the code reference:
 $url  -> a string that holds the url for which a change was detected.
 $text -> A Message to be sent.
-$task -> WWW::Monitor::Task object reference. 
+$task -> WWW::Monitor::Task object reference.
 The given code reference should return true for success.
 
 =cut
@@ -173,8 +170,8 @@ sub notify_callback {
 
 =head2 run
 
-Watch all given web page and report a change if detected. If a url is
-first visited ( i.e. the url is not in the cache db) than the url will
+Watch all given web pages and report changes if detected. If a url is
+first visited (i.e. the url is not in the cache db) than the url will
 be cached and no report will be created.
 
 
@@ -195,8 +192,8 @@ sub run {
 =head2 errors_table
 
 Return a hash reference of errors updated to last execution (i.e. when
-run method was last executed).  The returned keys are the urls where
-the values are erros description.
+the run method was last executed).  The returned keys are the urls where
+the values are error descriptions.
 
 =cut
 
@@ -298,7 +295,7 @@ L<http://search.cpan.org/dist/WWW-Monitor>
 
 =back
 
-=head1 ACKNOWLEDGEMENTS
+=head1 ACKNOWLEDGMENTS
 
 =head1 COPYRIGHT & LICENSE
 
