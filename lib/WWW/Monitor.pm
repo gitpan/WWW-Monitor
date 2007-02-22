@@ -15,7 +15,7 @@ use File::HomeDir;
 
 our(@ISA, @EXPORT, @EXPORT_OK, $VERSION);
 
-$VERSION = 0.122;
+$VERSION = 0.123;
 
 use base qw(Exporter WWW::Mechanize);
 
@@ -101,8 +101,8 @@ sub new {
   my $cache_root = delete $args{CACHE_ROOT};
   unless ($cache_root) {
     my $def_dir =  File::HomeDir->my_home."/".$DEFAULT_CACHE_SUBDIR;
-    if (!-d $def_dir and !mkdir($def_dir)) { 
-      carp("Cannot create default cache directory $def_dir.$!");
+    if (!-d $def_dir) { 
+      carp("directory $def_dir does not exists.$!");
       return 0;
     }
     $cache_root = $def_dir;
