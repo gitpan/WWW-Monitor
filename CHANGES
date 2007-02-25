@@ -4,7 +4,9 @@ Revision history for Perl module WWW::Monitor:
 	- Created
         - Released for beta tests
 
-0.12  Sun Feb 20 09:15:11 GMT 2007
+0.12  Tue Feb 20 09:15:11 GMT 2007
         - Documentation changes
         - Examples added
-      
+
+0.126  Sun Feb 25  09:15:11 GMT 2007
+        -Bug fix in webmon.pl - support multi queries section       

@@ -151,7 +151,7 @@ sub read_configuration_recursive {
     if (/(\S+)\s+start/) {
       my $key = $1;
       my $inner = {};
-      $res->{$key} = [] unless(exists $res->{key});
+      $res->{$key} = [] unless(exists $res->{$key});
       push @{$res->{$key}},$inner;
       read_configuration_recursive($qfile,$inner,$lineNum) or return 0;
       next;

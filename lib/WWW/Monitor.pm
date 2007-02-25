@@ -15,7 +15,7 @@ use File::HomeDir;
 
 our(@ISA, @EXPORT, @EXPORT_OK, $VERSION);
 
-$VERSION = 0.125;
+$VERSION = 0.126;
 
 use base qw(Exporter WWW::Mechanize);
 
