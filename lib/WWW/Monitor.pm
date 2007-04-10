@@ -15,7 +15,7 @@ use File::HomeDir;
 
 our(@ISA, @EXPORT, @EXPORT_OK, $VERSION);
 
-$VERSION = 0.126;
+$VERSION = 0.2;
 
 use base qw(Exporter WWW::Mechanize);
 
@@ -57,22 +57,47 @@ Version 0.01
      $mon->watch('http:://www.kahanovitch.com/');
      $mon->run;
 
+
+Or:
+
+     use WWW::Monitor;
+     my $mon=WWW::Monitor->new('MAIL_CALLBACK'=>\&notify,'CACHE'=>$cache);
+     my $task = $mon->watch("$url");
+     $mon->run or die "Query ended with error";
+     
+     sun notify {
+         my ($url,$task) =@_;
+         print "$url has changed\n";
+         while (my ($sub_url,$ref_http_response) = each %{$task->added_parts()}) {
+           print "New part added: $sub_url \n";
+         }
+          
+         while (my ($sub_url,$ref_http_response) = each %{$task->missing_parts()}) {
+           print "Part deleted: $sub_url \n";
+         }
+        
+        foreach my $sub_url ( $task->changed_parts()) {
+           print "$sub_url has changed:\n";
+           my ($old,$new) = $task->get_old_new_pair($sub_url);
+           my $old_content = $old->content;
+           my $new_content = $new->content;
+        }
+     }
+
 =head1 Description
 
 L<WWW::Monitor> ia a Web monitoring mechanism built to detect and
 notify changes in web pages.  The module is designed to compare
-existing, online versions of web page and compare it with a pre-cached
-matched version.  A web page may include more than one file. A page
-may include some frames and visible referenced data, which all
-together form a sigle visible page.  For now, WWW::Monitor compares
-only textual information. Images, and non-HTML data are not being
-compared. Textual information is extracled by HTML::FormatText and
-HTML::TreeBuilder. Text comparison is being done by using the Text::Diff
-module. To store information, WWW::Monitor caches data with the "Cache"
-mechanism. By default, Cache::File is being used, but the user may
-choose to use any Cache object that implements the Cache module interface.
-L<WWW::Monitor> is a subclass of L<WWW::Mechanize>, so any of
-L<WWW::Mechanize> or its super classes can be used.
+existing, online versions and pre-cached matched version.  A web page
+may include more than one file. A page may include some frames and
+visible referenced data, which all together form a sigle visible page.
+For now, WWW::Monitor compares only textual information. Images, and
+non-HTML data are not being compared. To store information,
+WWW::Monitor caches data with the "Cache" mechanism. By default,
+Cache::File is being used, but the user may choose to use any Cache
+object that implements the Cache module interface.  L<WWW::Monitor> is
+a subclass of L<WWW::Mechanize>, so any of L<WWW::Mechanize> or its
+super classes can be used.
 
 =head1 EXPORT
 
@@ -235,9 +260,9 @@ Activate notification callback
 
 sub notify {
   my $self = shift;
-  my ($url,$text,$task) = @_;
+  my ($url,$task) = @_;
   if (exists $self->{mailcallback} and $self->{mailcallback}) {
-    return &{$self->{mailcallback}}($url,$text,$task);
+    return &{$self->{mailcallback}}($url,$task);
   }
   return 1;
 }

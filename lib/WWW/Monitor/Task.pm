@@ -13,7 +13,6 @@ use HTTP::Response;
 use HTTP::Request;
 use HTTP::Headers;
 use HTTP::Status;
-use Text::Diff;
 use HTML::TreeBuilder;
 #use Carp;
 
@@ -21,7 +20,7 @@ use HTML::TreeBuilder;
 
 our(@ISA, @EXPORT, @EXPORT_OK, $VERSION);
 
-$VERSION = 0.11;
+$VERSION = 0.2;
 
 @ISA = qw(
 	  Exporter
@@ -104,7 +103,7 @@ sub run {
   #Get Url data. Output data is stored in the hash ref $responses.
   $self->get_url_data($mechanize,$url_i,$responses) or return 0;
 
-  #Compares Pages list eith cache.
+  #Compares Pages list with cache.
   my ($url_keys_for_comapre,$old_pages_to_compare,$new_pagets_to_compare,$missing_pages,$added_pages,$existsInCache) = $self->sync_cache($url_i,$responses);
 
   # if a page does not exist in cache we don't want to notify this
@@ -128,24 +127,27 @@ sub be_notified {
   my ($carrier,$url,$missing_pages,$added_pages,$old_pages_to_compare,$new_pages_to_compare,$url_keys_for_comapre) = @_;
   my $cache = $self->{cache};
   my $ret = 1;
-  my @messages;
   #Extract textual information from missing pages.
-  my $notify_ind1 = $self->extract_text($missing_pages,"Cannot find the following parts:",\@messages);
+  $self->{missing_parts} = $missing_pages;
+  my $notify_ind1 = values(%$missing_pages);
 
   #Extract added information from added pages.
-  my $notify_ind2 = $self->extract_text($added_pages,"Found new parts in url:",\@messages);
+  $self->{added_parts} = $added_pages;
+  my $notify_ind2 = values(%$added_pages);
+ 
   my $index = 0;
-
   #Go over on all pages that exists in cache and perform textual comparison
+  $self->{changed} = {};
   if (@$old_pages_to_compare) {
-    push @messages,"The following parts has been changed since last visited:";
     while ($index < scalar(@$old_pages_to_compare)) {
       my $t1 = $self->format_html($old_pages_to_compare->[$index]);
       my $t2 = $self->format_html($new_pages_to_compare->[$index]);
+      
       if ($$t1 ne $$t2) {
-	$cache->set($url_keys_for_comapre->[$index],${$new_pages_to_compare->[$index]});
+	my $tmp = [$old_pages_to_compare->[$index], $new_pages_to_compare->[$index] ];
+	$self->{changed}{$url_keys_for_comapre->[$index]} = $tmp;
+	$cache->set($url_keys_for_comapre->[$index],$new_pages_to_compare->[$index]->as_string);
 	$notify_ind = 1;
-	push @messages,diff($t1,$t2,{ STYLE => "Context" });
       }
       ++$index;
     }
@@ -154,52 +156,134 @@ sub be_notified {
 
   #If notification is required, perform it.
   if ($notify_ind or $notify_ind1 or $notify_ind2) {
+    $self->{time1} = HTTP::Date::time2str($self->validity($url));
+    $self->{time2} = HTTP::Date::time2str(time());
     $self->store_validity($url,time());
-    return $carrier->notify($url,join("\n",@messages),$self);
+    return $carrier->notify($url,$self);
   } else { return 1;}
 }
 
-=head2 format_html
+=head2 is_html
 
 (Private method)
+Return true if page is html
+
+=cut
+
+sub is_html {
+  my $self = shift;
+  my $response = shift;
+  return $response->header('Content-Type') =~ m%^text/html%;
+}
+
+=head2 missing_parts
+
+Return hash reference which includes parts that exists only in old cached version. Every entry in the returned list is a reference to HTTP::REsponse object.
+
+=cut
+
+sub missing_parts {
+  my $self = shift;
+  return $self->{missing_parts};
+}
+
+=head2 added_parts
+
+Return hash reference which includes parts that exists only in the new cached version.Every entry in the returned list is a reference to HTTP::REsponse object.
+
+=cut
+
+sub added_parts {
+  my $self = shift;
+  return $self->{added_parts};
+}
+
+=head2 old_version_time_stamp
+
+Return the time when the url was previously cached. Time is returned in seconds since epoch.
+
+=cut
+
+sub old_version_time_stamp {
+  my $self = shift;
+  return $self->{time1};
+}
+
+=head2 new_version_time_stamp
+
+Return the time when the url was queried. Time is returned in seconds since epoch.
+
+=cut
+
+sub new_version_time_stamp {
+  my $self = shift;
+  return $self->{time2};
+}
+
+=head2 changed_parts
+
+Return a list that consists of all changed parts.
+
+=cut
+
+sub changed_parts {
+  my $self = shift;
+  return keys %{$self->{changed}};
+}
+
+=head2 get_old_new_pair [ urls key ]
+
+Return a list of two elements. The first one is the old cached version and the second one is the new version.
+The given url key must be one of the keys returned by changed_parts method.
+Each of the pair two pairs is a reference to L<HTTP::Response> object.
+
+
+
+=cut
+
+sub get_old_new_pair {
+  my $self = shift;
+  my $url_key = shift;
+  if (exists $self->{changed}{$url_key}) {
+    return @{$self->{changed}{$url_key}};
+  } else {
+    return 0;
+  }
+}
+
+=head2 format_html [ leftmargin, rightmargin]
+
 Return a textual version of HTML
+left and right margins set the margin for the returned data.
 
 =cut
 
 sub format_html {
   my $self = shift;
-  my $html_ref = shift;
-  my $tree = HTML::TreeBuilder->new->parse($$html_ref);
-  my $formatter = HTML::FormatText->new(leftmargin => 0, rightmargin => 50);
-  my $ret = $formatter->format($tree);
-  return \$ret;
-}
+  my $response_ref = shift;
+  my $leftmargin = 0;
+  my $rightmargin = 120;
 
-=head2 extract_text 
-
-(Private Method).
-Extract text from a given set of pages.
-
-=cut
-
-sub extract_text {
-  my $self = shift;
-  my $pages = shift;
-  my $textHeader = shift;
-  my $messages = shift;
-  my $notif_ind = 0;
-  my @texts = ();
-  foreach my $part (values %$pages) {
-    my $tmp = $self->format_html($part);
-    push @texts,$$tmp unless ($$tmp =~ m/^\s*$/);
+  if (@_) {
+    $leftmargin = shift;
+    $rightmargin = shift;
   }
-  if (@texts) {
-    push @$messages,$textHeader;
-    push @$messages,@texts;
-    $notif_ind = 1;
-  }
-  return $notif_ind;
   
+  my $reftype = ref($response_ref);
+  if (($reftype ne 'REF') and $self->is_html($response_ref)) {
+    my $tree = HTML::TreeBuilder->new->parse($response_ref->content);
+    my $formatter = HTML::FormatText->new(leftmargin => $leftmargin, rightmargin => $rightmargin);
+    my $ret = $formatter->format($tree);
+    return \$ret;
+  } elsif ($reftype eq 'REF') { #Backward compatibility case to ver 0.126
+    my $tree = HTML::TreeBuilder->new->parse($response_ref);
+    my $formatter = HTML::FormatText->new(leftmargin => $leftmargin, rightmargin => $rightmargin);
+    my $ret = $formatter->format($tree);
+    return \$ret;
+  } else { #We have non html data
+    my $content = $response_ref->content;
+    return \$content;
+  }
 }
 
 =head2 get_hash_cache_key
@@ -232,7 +316,12 @@ sub get_cache_hash {
   $cache->exists($hash_key) or do { $$is_cached_site = 0;return 0;};
   foreach $hash_key (split($HASH_SEPARATOR, $cache->get($hash_key))) {
     my $tmp = $cache->get($hash_key);
-    $ret->{$hash_key} = \$tmp;
+    my $tmp2 = HTTP::Response->parse( $tmp );
+    if ($tmp2) {
+      $ret->{$hash_key} = $tmp2;
+    } else { #Backward compatibility to version 0.126
+      $ret->{$hash_key} = \$tmp;
+    }
   }
   return $ret;
 }
@@ -253,6 +342,23 @@ sub store_validity {
   
 }
 
+=head2 validity
+
+(private method)
+Retreive date validity of per stores url
+
+=cut
+
+sub validity {
+  my ($self,$url) = (@_);
+  my $cache = $self->{cache};
+  my $hash_key = $self->get_hash_cache_key($url);
+  if ($cache->exists($hash_key)) {
+    return $cache->validity($hash_key);
+  } 
+  return 0; 
+}
+
 =head2 store_cache_hash
 
 Store General information of a web address, including all frames and dates.
@@ -266,7 +372,7 @@ sub store_cache_hash {
   my $header = join($HASH_SEPARATOR,keys %$data);
   $cache->set($hash_key,join($HASH_SEPARATOR,keys %$data));
   while (my ($key,$value) = each %$added_data) {
-    $cache->set($key,$$value);
+    $cache->set($key,$value->as_string);
     $cache->set_validity($key,time());
   }
   while (my ($key2,$value2) = each %$deleted_data) {
@@ -308,15 +414,15 @@ sub sync_cache {
     if ($new_keys[$index_new] eq $old_keys[$index_old]) { 
       if ($new_data_http->{$new_keys[$index_new]}->code() != RC_NOT_MODIFIED) {
 	push @old_pages_to_compare, $old_data->{ $old_keys[$index_old]};
-	my $content = $new_data_http->{$new_keys[$index_new]}->content;
-	push @new_pages_to_compare, \$content;
+	my $a_response = $new_data_http->{$new_keys[$index_new]};
+	push @new_pages_to_compare, $a_response;
 	push @url_keys_for_comapre,$new_keys[$index_new];
       }
       ++$index_old;++$index_new;next;
     }
     if ($new_keys[$index_new] lt $old_keys[$index_old]) { 
-      my $content = $new_data_http->{$new_keys[$index_new]}->content;
-      $added_data->{$new_keys[$index_new]} = \$content;
+      my $a_response = $new_data_http->{$new_keys[$index_new]};
+      $added_data->{$new_keys[$index_new]} = $a_response;
       ++$index_new;
       next;
     }
@@ -324,8 +430,8 @@ sub sync_cache {
     ++$index_old;next;
   }
   while ($index_new < scalar(@new_keys)) {
-    my $content = $new_data_http->{$new_keys[$index_new]}->content;
-    $added_data->{$new_keys[$index_new]} = \$content;
+    my $a_response = $new_data_http->{$new_keys[$index_new]};
+    $added_data->{$new_keys[$index_new]} = $a_response;
     ++$index_new;
   }
   while ($index_old < scalar(@old_keys)) {
@@ -353,14 +459,16 @@ sub get_url_data {
   my $responses = shift;
   my $cache = $self->{cache};
   my $r = HTTP::Request->new('GET',$url);
+  # Only allow "identity" for the time being
+  $r->header( 'Accept-Encoding', 'identity' );
   if ($cache->exists($url)) {
     my $validity = $cache->validity($url);
     $r->header('If-Modified-Since'=>HTTP::Date::time2str($cache->validity($url))) if ($validity);
   }
   my $response = $mechanize->request( $r );
-
+  
   if ($response->code() == 304) {
-    $response->content($cache->get($url));
+    $response = HTTP::Response->parse($cache->get($url));
     $mechanize->_update_page($r,$response);
   } elsif(!($self->{status} = $response->is_success())) {
     $self->{error} = $response->status_line;

@@ -31,6 +31,10 @@
      #log_notifications - Log every outgoing mail notification.
      log_notifications=yes
 
+     #leftmaring, rightmargin - left and right margins for text generated diffs.
+     leftmaring=0
+     rightmargin=120
+
      #query start - start a new query
      query start
 

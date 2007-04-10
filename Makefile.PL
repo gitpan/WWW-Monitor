@@ -5,6 +5,16 @@
   name            'WWW-Monitor';
   all_from        'lib/WWW/Monitor.pm';
   license         'perl';
+
+  @programs_to_install=qw(bin/webmon.pl);
+#  use Getopt::Std;
+#  my $opt_n;
+#  unless (getopts("n")) { die "Usage: $0 [-n]\n"; }
+  @programs_to_install = () if $opt_n;
+
+  install_script($_) foreach @programs_to_install;
+  clean_files($_) foreach @programs_to_install;
+  
     
   # Specific dependencies
   requires        'Carp'                 => 0;
@@ -12,7 +22,6 @@
   requires        'WWW::Mechanize'       => '1.20';
   requires        'HTML::FormatText'     => '2.04';
   requires        'HTML::TreeBuilder'    => '3.23';
-  requires        'Text::Diff'           => '0.35';
   requires        'Cache::File'          => '2.04';
   build_requires  'Test::More'           => '0.66';
   no_index        'directory'            => 'example';

@@ -22,6 +22,7 @@ use WWW::Monitor;
 use Schedule::Cron;
 use Cache::File;
 use Carp;
+use Text::WordDiff;
 
 $VERSION = 1.0;
 
@@ -51,6 +52,11 @@ $MAIL_METHOD=$conf->{mail_method}[-1] if(exists($conf->{mail_method}));
 $SMTP_SERVER=$conf->{smtp_server}[-1] if(exists($conf->{smtp_server}));
 $SMTP_TIMEOUT=$conf->{smtp_server}[-1] if(exists($conf->{smtp_server}));
 
+#Setting text formatting foelds
+$RIGHT_MARGIN=120; #DEfault value
+$RIGHT_MARGIN=$conf->{rightmargin}[-1] if(exists($conf->{rightmargin}));
+$LEFT_MARGIN=0;#Deafault
+$LEFT_MARGIN=$conf->{leftmargin}[-1] if(exists($conf->{leftmargin}));
 
 #Preparing Log directory.
 $LOG_NOTIFICATIONS="";
@@ -100,16 +106,18 @@ foreach my $query (@{$conf->{query}}) {
   foreach my $cron_samp (@{$query->{sampling_rate}}) {
     log_notification ("sampling_rate = ",$cron_samp);
     $cron->add_entry($cron_samp,\&run_query,$mon);
+ #   run_query($mon);
   }
 }
 
-log_notification ("Started\n********");
+log_notification ("Started\n********\n");
 
 $cron->run();
 
 
 sub run_query {
   my $mon = shift;
+#  print "Getting started\n";
   log_notification("Testing: ",join("\n",$mon->targets));
   $mon->run or log_notification("Query ended with error",$mon->errors);
   return 1;
@@ -182,15 +190,58 @@ sub report_error {
 
 #mail notification callback
 sub notify {
-  my ($url,$text,$task) =@_;
+  my ($url,$task) =@_;
+  my $text = "";
+
+  $text .= "<br>$url has changed since last visited</br>";
+  $text .= "<br>This url was visited in ";
+  $text .= $task->new_version_time_stamp();
+  $text .= "</br><br>Previously the site was visited in ";
+  $text .= $task->old_version_time_stamp();
+  $text .= "</br>";
+  
+#  my $mime_type = "";
+
+  my $missing_parts = $task->missing_parts();
+  while (my ($missing_url,$missing_data) = each %$missing_parts) {
+    $text .= "<br><p>The following part is missing:$missing_url - </p></br>";
+    $text .= $task->format_html($missing_data,$LEFT_MARGIN,$RIGHT_MARGIN);
+    $text .= <br/>;
+  }
+
+  my $added_parts = $task->added_parts();
+  while (my ($added_url,$added_data) = each %$added_data) {
+    $text .= "<br><p>New part found: $added_url</p></br>";
+    $text.= $task->format_html($added_data,$LEFT_MARGIN,$RIGHT_MARGIN);
+    $text .=<br/>
+  }
+  
+  my $ind = 0;
+  foreach my $changed_url ($task->changed_parts()){
+    $ind++;
+    my ($old,$new) = $task->get_old_new_pair($changed_url);
+ #   $mime_type = $new->header('Content-Type') unless ($mime_type);
+ 
+    my $old_content = ${$task->format_html($old,$LEFT_MARGIN,$RIGHT_MARGIN)};
+    my $new_content = ${$task->format_html($new,$LEFT_MARGIN,$RIGHT_MARGIN)};
+    if ($task->is_html($new)) {
+      my $this_diff = word_diff (\$old_content, \$new_content, { STYLE => 'HTML' });
+      $this_diff =~ s%\n%<br/>%g;
+      $text .= $this_diff;
+    } else {
+      $text .= "<br> $changed_url has changed</br>";
+    }
+  }
+  
   foreach my $recipient (@{$RECIPIENTS{$task}}) {
     my $mail_obj = 
       MIME::Lite->new(To      => $recipient,
 		      From    => $FROM,
 		      Subject => $SUBJECT,
-		      Type    => 'Text',
-		      Data    => 'For details visit '.$url."\n".$text
+		      Type    => 'text/html',
+		      Data    => '<br>For details visit '.$url."</br>".$text
 		     );
+#    print "mime_type = $mime_type\n";
     
     if ($MAIL_METHOD ne "sendmail") {
       $mail_obj->send('smtp',$SMTP_SERVER,$SMTP_TIMEOUT) or 
@@ -198,8 +249,11 @@ sub notify {
     } else {
       $mail_obj->send or log_notification("sendmail to $recipient ended with error");
     }
-    if ($LOG_NOTIFICATIONS ne "") {
+
+#Yaron Delete the 1 bellow
+    if (1 || $LOG_NOTIFICATIONS ne "") {
       log_notification("To: $recipient\n","url = $url\n","text = $text\n");
+      
     }
   }
   return 1;
@@ -280,6 +334,10 @@ Short help message
 
      #log_notifications - Log every outgoing mail notification.
      log_notifications=yes
+
+     #leftmaring, rightmargin - left and right margins for text generated diffs.
+     leftmaring=0
+     rightmargin=120
 
      #query start - start a new query
      query start
