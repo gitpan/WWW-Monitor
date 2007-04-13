@@ -1,4 +1,7 @@
 #!/usr/bin/perl
+
+eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
+    if 0; # not running under some shell
 ########################################################################
 # Filename: webmon.pl - Version 1.0                                    #
 # Author:   Yaron Kahanovitch <yaron at kahanovitch dor com>           #
@@ -24,7 +27,7 @@ use Cache::File;
 use Carp;
 use Text::WordDiff;
 
-$VERSION = 1.0;
+$VERSION = 1.21;
 
 $CONFIG = '/etc/webmon.conf';
 $LOGPATH = "";
