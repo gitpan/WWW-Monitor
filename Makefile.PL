@@ -24,6 +24,8 @@
   requires        'HTML::TreeBuilder'    => '3.23';
   requires        'Cache::File'          => '2.04';
   requires        'Text::WordDiff'       => '0.02';
+  requires        'MIME::Lite'           => '3.01';
+  requires        'Schedule::Cron'       => '0.97';
   build_requires  'Test::More'           => '0.66';
   no_index        'directory'            => 'example';
     
