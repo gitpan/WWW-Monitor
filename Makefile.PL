@@ -7,14 +7,8 @@
   license         'perl';
 
   @programs_to_install=qw(bin/webmon.pl);
-#  use Getopt::Std;
-#  my $opt_n;
-#  unless (getopts("n")) { die "Usage: $0 [-n]\n"; }
-  @programs_to_install = () if $opt_n;
 
   install_script($_) foreach @programs_to_install;
-  clean_files($_) foreach @programs_to_install;
-  
     
   # Specific dependencies
   requires        'Carp'                 => 0;
@@ -24,7 +18,6 @@
   requires        'HTML::TreeBuilder'    => '3.23';
   requires        'Cache::File'          => '2.04';
   requires        'Text::WordDiff'       => '0.02';
-  requires        'MIME::Lite'           => '3.01';
   requires        'Schedule::Cron'       => '0.97';
   build_requires  'Test::More'           => '0.66';
   no_index        'directory'            => 'example';

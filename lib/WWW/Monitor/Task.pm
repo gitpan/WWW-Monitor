@@ -20,7 +20,7 @@ use HTML::TreeBuilder;
 
 our(@ISA, @EXPORT, @EXPORT_OK, $VERSION);
 
-$VERSION = 0.2;
+$VERSION = 0.23;
 
 @ISA = qw(
 	  Exporter

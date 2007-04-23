@@ -20,7 +20,7 @@ eval 'exec /usr/bin/perl  -S $0 ${1+"$@"}'
 ########################################################################
 
 use Getopt::Long;
-use MIME::Lite;
+use LWP::UserAgent;;
 use WWW::Monitor;
 use Schedule::Cron;
 use Cache::File;
@@ -52,8 +52,7 @@ $FROM = $conf->{from}[-1] if (exists $conf->{from});
 $SUBJECT=$conf->{subject}[-1] if (exists $conf->{subject});
 $MAIL_METHOD = "sendmail";
 $MAIL_METHOD=$conf->{mail_method}[-1] if(exists($conf->{mail_method}));
-$SMTP_SERVER=$conf->{smtp_server}[-1] if(exists($conf->{smtp_server}));
-$SMTP_TIMEOUT=$conf->{smtp_server}[-1] if(exists($conf->{smtp_server}));
+
 
 #Setting text formatting foelds
 $RIGHT_MARGIN=120; #DEfault value
@@ -237,26 +236,19 @@ sub notify {
   }
   
   foreach my $recipient (@{$RECIPIENTS{$task}}) {
-    my $mail_obj = 
-      MIME::Lite->new(To      => $recipient,
-		      From    => $FROM,
-		      Subject => $SUBJECT,
-		      Type    => 'text/html',
-		      Data    => '<br>For details visit '.$url."</br>".$text
-		     );
-#    print "mime_type = $mime_type\n";
-    
-    if ($MAIL_METHOD ne "sendmail") {
-      $mail_obj->send('smtp',$SMTP_SERVER,$SMTP_TIMEOUT) or 
-	log_notification("smtp send to $recipient ended with error");
-    } else {
-      $mail_obj->send or log_notification("sendmail to $recipient ended with error");
+    my $mail_obj =  LWP::UserAgent->new;
+    $mail_obj->agent("MyApp/0.1 ");
+    my $req = HTTP::Request->new(POST => 'mailto:'.$recipient);
+    $req->header(Subject=>$SUBJECT);
+    $req->header(From=>$FROM);
+    $req->content_type('text/html');
+    $req->content( "<br>For details visit <a href=\"$url\">$url</a></br>$text");
+    my $res = $mail_obj->request($req);
+    if ($res->is_success) {
+      log_notification($res->content);
     }
-
-#Yaron Delete the 1 bellow
-    if (1 || $LOG_NOTIFICATIONS ne "") {
-      log_notification("To: $recipient\n","url = $url\n","text = $text\n");
-      
+    else {
+      log_notification("Fail to send mail to $recipient.$res->status_line");
     }
   }
   return 1;
@@ -328,15 +320,6 @@ Short help message
 
      #mail_method - <sendmail | smtp> - Method for sending mail. default - sendmail.
      mail_method=sendmail
-
-     #smtp_server - smtp server.used only if mail_method=smtp. 
-     #smtp_server=smtp.myisp.net
-
-     #smtp_timeout - Time out to be used if smtp mail metho is in use. Valid only if mail_method=smtp.
-     smtp_timeout=60 #seconds
-
-     #log_notifications - Log every outgoing mail notification.
-     log_notifications=yes
 
      #leftmaring, rightmargin - left and right margins for text generated diffs.
      leftmaring=0

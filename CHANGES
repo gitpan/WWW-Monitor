@@ -16,3 +16,6 @@ Revision history for Perl module WWW::Monitor:
 	-Cache the whole HTTP response.
         -Take Out Text::Diff.
         -Support non html sites.
+
+0.23    Apr 22 
+        - Mime::Light is being removed. LWP send is used instead

@@ -19,18 +19,6 @@
      #subject - A subject line for mail messages.
      subject=Web alert, web page changed!!!
 
-     #mail_method - <sendmail | smtp> - Method for sending mail. default - sendmail.
-     mail_method=sendmail
-
-     #smtp_server - smtp server.used only if mail_method=smtp. 
-     #smtp_server=smtp.myisp.net
-
-     #smtp_timeout - Time out to be used if smtp mail metho is in use. Valid only if mail_method=smtp.
-     smtp_timeout=60 #seconds
-
-     #log_notifications - Log every outgoing mail notification.
-     log_notifications=yes
-
      #leftmaring, rightmargin - left and right margins for text generated diffs.
      leftmaring=0
      rightmargin=120
