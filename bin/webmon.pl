@@ -50,9 +50,6 @@ unless (exists ($conf->{query})) { warn "No queries given ";exit(0);}
 #Setting up mail fileds.
 $FROM = $conf->{from}[-1] if (exists $conf->{from});
 $SUBJECT=$conf->{subject}[-1] if (exists $conf->{subject});
-$MAIL_METHOD = "sendmail";
-$MAIL_METHOD=$conf->{mail_method}[-1] if(exists($conf->{mail_method}));
-
 
 #Setting text formatting foelds
 $RIGHT_MARGIN=120; #DEfault value
@@ -317,9 +314,6 @@ Short help message
 
      #subject - A subject line for mail messages.
      subject=Web alert, web page changed!!!
-
-     #mail_method - <sendmail | smtp> - Method for sending mail. default - sendmail.
-     mail_method=sendmail
 
      #leftmaring, rightmargin - left and right margins for text generated diffs.
      leftmaring=0
